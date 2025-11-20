@@ -27,7 +27,7 @@ The following tools are managed automatically by the Snakefile if no binary is s
 
 ---
 
-## 2. Quick setup
+## 2. Setup
 
 ```bash
 # 1) Clone the repository
@@ -66,7 +66,7 @@ Each dataset has a `builder` field:
 - `gfa_from_url`  
   - Input: pre‑built GFA downloaded from a URL.
 - `pggb_from_fasta`  
-  - Input: FASTA, graph built with pggb (pangenome graphs).
+  - Input: FASTA, graph built with [pggb](https://github.com/pangenome/pggb) (pangenome graphs).
 
 ### Enable / disable a dataset
 
