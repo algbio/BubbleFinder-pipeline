@@ -198,7 +198,7 @@ defaults:
     clsd_bin: /path/to/clsd
 ```
 
-If these paths are **not** set, the Snakefile will:
+If these paths are not set, the Snakefile will:
 
 - clone/build `BubbleFinder`, `clsd`, and `Lighter` under `build/`,
 - download `get_blunted` into `bin/`.
@@ -207,22 +207,14 @@ If these paths are **not** set, the Snakefile will:
 
 ## 7. Quick troubleshooting
 
-- **Error in prechecks (`prechecks`)**  
+- Error in prechecks (`prechecks`):  
   - Check `results/logs/*` (especially `results/logs/bench`, `results/logs/ggcat`, `results/logs/vg`).
   - Ensure `conda` or `mamba` is available.
-- **Frequent timeouts**  
+- Frequent timeouts: 
   - Adjust `defaults.tools.timeout.seconds` in `datasets.yaml`.
-- **Problem with a specific dataset**  
+- Problem with a specific dataset:
   - Run a single target, e.g.:  
     `snakemake --use-conda -j 4 data/coli3682/coli3682.cleaned.gfa`
-- **Bluntification issues**  
+- Bluntification issues:
   - A WARN about `get_blunted` means the pipeline falls back to "naive bluntify" (overlap fields forced to `*`).  
   - Install GetBlunted and set `defaults.tools.get_blunted` for more better behavior.
-
----
-
-## 8. Going further
-
-- Tune `ggcat.k`, `vg.region`, `pggb.extra_opts` per dataset.
-- Adjust `defaults.bench.reps` and `defaults.bench.threads_by_program` for more detailed benchmarks.
-- Extend the Snakefile with new programs (following the `bench_*` rule patterns).
