@@ -298,7 +298,7 @@ include: "modules/pggb_from_fasta.smk"
 
 if SPQR_BIN == SPQR_BIN_DEFAULT:
     rule build_bubblefinder:
-        message: "Clone & build BubbleFinder (sbSPQR) from Git"
+        message: "Clone & build BubbleFinder from Git"
         output:
             SPQR_BIN_DEFAULT
         conda:
@@ -318,7 +318,7 @@ if SPQR_BIN == SPQR_BIN_DEFAULT:
 
             cd build/BubbleFinder
  
-            git checkout 6ba16c9527bbde295a3234b717c594d0178e3cd3
+            git checkout 244f5ad1a9b258da454eeb5796c1d2e7985cb9aa
 
             mkdir -p build
             cd build
@@ -1178,7 +1178,7 @@ rule clsd_prepare_edgelist:
         """
 
 rule sbspqr_prepare_sgraph:
-    message: "Prepare sgraph for sbSPQR (SB) for {wildcards.dataset}"
+    message: "Prepare sgraph for BubbleFinder for {wildcards.dataset}"
     input:
         gfa=lambda wc: gfa_for_sb_inputs(wc.dataset)
     output:
@@ -1227,7 +1227,7 @@ rule bench_BubbleGun_gfa:
             f.write(f"Signature\t{sig}\n")
 
 rule bench_sbSPQR_gfa:
-    message: "Bench sbSPQR (BiSB) on {wildcards.dataset} rep={wildcards.rep} t={wildcards.t}"
+    message: "Bench BubbleFinder (bidirectional) on {wildcards.dataset} rep={wildcards.rep} t={wildcards.t}"
     input:
         gfa=os.path.join(DATA_DIR, "{dataset}", "{dataset}.cleaned.gfa"),
         pre=rules.prechecks.output
@@ -1273,7 +1273,7 @@ rule bench_sbSPQR_gfa:
             pass
 
 rule bench_sbSPQR_snarls_gfa:
-    message: "Bench sbSPQR snarls (GFA) on {wildcards.dataset} rep={wildcards.rep} t={wildcards.t}"
+    message: "Bench BubbleFinder snarls (GFA) on {wildcards.dataset} rep={wildcards.rep} t={wildcards.t}"
     input:
         gfa=os.path.join(DATA_DIR, "{dataset}", "{dataset}.cleaned.gfa"),
         pre=rules.prechecks.output
@@ -1319,7 +1319,7 @@ rule bench_sbSPQR_snarls_gfa:
             pass
 
 rule bench_sbSPQR_sb:
-    message: "Bench sbSPQR (SB, sgraph) on {wildcards.dataset} rep={wildcards.rep} t={wildcards.t}"
+    message: "Bench BubbleFinder (unidirectional, sgraph) on {wildcards.dataset} rep={wildcards.rep} t={wildcards.t}"
     input:
         sgraph=os.path.join(DATA_DIR, "{dataset}", "{dataset}.sbspqr.sgraph"),
         pre=rules.prechecks.output
