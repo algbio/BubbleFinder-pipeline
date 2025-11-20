@@ -124,7 +124,7 @@ snakemake -n -p
 ### Full run (all enabled datasets)
 
 ```bash
-snakemake --use-conda -j 8
+snakemake all --use-conda -j 8
 ```
 
 - `--use-conda`: required to create/use the environments defined in `config/*.yml`.
