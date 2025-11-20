@@ -1,0 +1,7 @@
+name: ggcat-2
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - ggcat >=2.0.0

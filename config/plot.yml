@@ -1,0 +1,10 @@
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas=2.2.*
+  - seaborn=0.13.*
+  - matplotlib-base=3.8.*
+  - numpy=1.26.*
+  - packaging
+  - tzdata

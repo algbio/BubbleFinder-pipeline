@@ -1,0 +1,8 @@
+name: bubblegun-env
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bubblegun
+  - coreutils

@@ -1,0 +1,345 @@
+# Datasets configuration for the Snakemake pipeline of BubbleFinder
+#
+# How to use:
+# - Each entry under datasets defines one dataset to be built and benchmarked
+# - You must choose a builder (pipeline to produce a raw GFA) and provide the
+#   URLs/parameters it needs
+# - After the raw GFA is built, the pipeline will bluntify/clean it and then run
+#   the selected benchmark programs on the cleaned GFA.
+#
+# Available builders (pick one per dataset):
+# - ggcat_from_fasta:
+#     Input: a single FASTA/FNA .gz URL (urls.fna_gz)
+#     Steps: download -> decompress -> ggcat build -> <name>.ggcat.gfa
+# - ggcat_from_reads_lighter:
+#     Input: one or more FASTQ(.gz). You can either:
+#       a) list explicit files in urls.files (recommended for manual selection), or
+#       b) provide an index page (urls.listing) + pattern (urls.pattern) for discovery.
+#     Steps: download -> concat/decompress -> Lighter correction -> ggcat build -> <name>.ggcat.gfa
+# - vg_from_vcf:
+#     Input: a reference FASTA .gz (urls.fa_gz) and a VCF .gz (urls.vcf_gz)
+#     Steps: download -> tabix index VCF -> vg construct (region) -> vg convert to GFA -> <name>.vg.gfa
+#
+# Notes:
+# - "enabled" can be true, false, or "auto" (auto means: dataset is enabled if its inputs
+#   can be discovered; used here for HG00733).
+# - "bench_programs" can override the global defaults.bench.programs per dataset.
+# - Threads and tool paths have safe defaults here and can be overridden per dataset (see HG00733.lighter.bin).
+# - Output directories are under data/<name> and results/.
+# - Allowed benchmark program names (as implemented in the Snakefile): BubbleGun_gfa, sbSPQR_gfa, vg_snarls_gfa
+
+version: 1
+
+defaults:
+  data_dir: data
+  out_dir: results
+
+  envs:
+    ggcat: config/ggcat.yml
+    bubblegun: config/bubblegun.yml
+    plot: config/plot.yml
+    vg: config/vg.yml
+    pytools: config/pytools.yml
+    pggb: config/pggb.yaml
+
+  tools:
+    time_bin: /usr/bin/time
+    timeout:
+      enabled: true
+      seconds: 30000
+      kill_after: 1
+      bin: timeout
+
+    # If you want to use pre-installed binaries instead, uncomment and point to them:
+    # spqr_bin: /path/to/BubbleFinder
+    # get_blunted: /path/to/get_blunted
+    # lighter_bin: /path/to/lighter
+    # clsd_bin: /path/to/clsd
+    spqr_gfa_flag: --gfa
+    spqr_sgraph_flag: --sgraph
+
+  threads:
+    ggcat: 8
+    vg: 16
+    lighter: 8
+    clsd: 1
+    pggb: 4
+
+  ggcat:
+    common_opts: "-e -s 1"
+
+  vg:
+    region: "1"
+    max_node_length: 3000000
+
+  pggb:
+    extra_opts: ""
+
+
+  sbfind:
+    threads: [1,4,8,16]
+
+  # Benchmark default configuration
+  bench:
+    reps: 2
+    programs:
+      - BubbleGun_gfa
+      - sbSPQR_gfa
+      - vg_snarls_gfa
+      - clsd_sb       
+      - sbSPQR_sb      
+      - sbSPQR_snarls_gfa
+    sink_output: false  # if true, discard program outputs to /dev/null
+    debug: false        # if true, add bash xtrace inside benchmarked commands
+
+    auto_rerun_failed_on_next: true
+    auto_rerun_timedout_on_next: true
+    invalidate_on_signature_change: true
+    timeout_rerun_policy: always   # always | increase_only
+
+    program_classes:
+      BubbleGun_gfa: BiSB
+      sbSPQR_gfa: BiSB
+      vg_snarls_gfa: BiSB
+      clsd_sb: SB
+      sbSPQR_sb: SB
+      sbSPQR_snarls_gfa: BiSB
+
+
+    threads_by_program:
+      sbSPQR_gfa: [1,4,8,16]
+      sbSPQR_sb: [1,4,8,16]
+      sbSPQR_snarls_gfa: [1,4,8,16]
+      vg_snarls_gfa: [1,4,8,16]
+
+
+  sgraph:
+    enabled: false       # globally enable sgraph production for enabled datasets
+    build_in_all: false  # if true, include sgraph targets in the "all" rule
+    gzip: true           # write .sgraph.gz and .map.tsv.gz
+    edges_only: true     # include only oriented nodes that appear in edges
+    one_based: false     # 1-based indexing instead of 0-based
+    add_rc_edges: false  # also add reverse-complement edges
+    dedup_edges: true    # de-duplicate exact multi-edges
+
+  sb:
+    ggcat_force_f: false  # if true, rebuild a “SB” GFA via `ggcat -f` for SB programs
+
+datasets:
+  # ---------------------------------------------------------------------------
+  # Dataset 1: Example ggcat-from-fasta via discovery (commented out)
+  # ---------------------------------------------------------------------------
+  # - name: GCA
+  #   enabled: true
+  #   builder: ggcat_from_fasta
+  #   urls:
+  #     listings:
+  #       - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/012/685/GCA_000012685.1_ASM1268v1/
+  #       - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/278/585/GCA_000278585.2_ASM27858v2/
+  #       - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/340/515/GCA_000340515.1_Myxococcus_xanthus_DZF1/
+  #       - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/400/955/GCA_006400955.1_ASM640095v1/
+  #       - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/401/215/GCA_006401215.1_ASM640121v1/
+  #       - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/401/635/GCA_006401635.1_ASM640163v1/
+  #       - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/402/015/GCA_006402015.1_ASM640201v1/
+  #       - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/402/735/GCA_006402735.1_ASM640273v1/
+  #       - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/402/735/GCA_006402735.1_ASM640273v1/
+  #       - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/900/106/535/GCA_900106535.1_IMG-taxon_2693429903_annotated_assembly/
+  #     origin: https://ftp.ncbi.nlm.nih.gov
+  #     pattern: '.*\.fna\.gz$'
+  #     limit: 0
+  #     discovery_timeout: 20
+  #   ggcat:
+  #     k: 41
+  #   sb:
+  #     ggcat_force_f: true
+  #   bench_programs:
+  #     # - BubbleGun_gfa
+  #     - sbSPQR_gfa
+  #     # - vg_snarls_gfa
+  #     # - clsd_sb
+  #     # - sbSPQR_sb
+  #     # - sbSPQR_snarls_gfa
+
+  # ---------------------------------------------------------------------------
+  # Dataset 2: HG00733 reads → lighter → ggcat (commented out)
+  # ---------------------------------------------------------------------------
+  # - name: HG00733
+  #   enabled: auto
+  #   builder: ggcat_from_reads_lighter
+  #   urls:
+  #     files: []
+  #     listing: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/data/HG00733/sequence_read/
+  #     origin: https://ftp.1000genomes.ebi.ac.uk
+  #     pattern: '.*\.filt\.fastq\.gz$'
+  #     paired_only: false
+  #     limit: 0
+  #     discovery_timeout: 15
+  #   lighter:
+  #     K: 11
+  #     genome_size: 3100000000
+  #     bin: /home/corentin/Lighter/lighter
+  #   ggcat:
+  #     k: 61
+  #   # Example of per-dataset thread overrides for sbfind:
+  #   # sbfind:
+  #   #   threads: [1, 8]
+  #   # bench_threads:
+  #   #   sbSPQR_gfa: [1]
+  #   #   sbSPQR_sb: [8, 16]
+  #   #   sbSPQR_snarls_gfa: [1, 32]
+  #   bench_programs:
+  #     - BubbleGun_gfa
+  #     - sbSPQR_gfa
+  #     - vg_snarls_gfa
+  #     - clsd_sb
+      # - sbSPQR_sb
+
+  # ---------------------------------------------------------------------------
+  # Dataset 3: Ultrabubble datasets via vg_from_vcf
+  # ---------------------------------------------------------------------------
+  # - name: Ultrabubble_dataset_chr1
+  #   enabled: true
+  #   builder: vg_from_vcf
+  #   urls:
+  #     fa_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz
+  #     vcf_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
+  #   vg:
+  #     region: "1"
+  #     max_node_length: 3000000
+  #   bench_programs:
+  #     # - BubbleGun_gfa
+  #     - sbSPQR_gfa
+  #     # - vg_snarls_gfa
+  #     # - clsd_sb
+  #     - sbSPQR_sb
+  #     - sbSPQR_snarls_gfa
+
+  # - name: Ultrabubble_dataset_chr10
+  #   enabled: true
+  #   builder: vg_from_vcf
+  #   urls:
+  #     fa_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz
+  #     vcf_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr10.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
+  #   vg:
+  #     region: "10"
+  #     max_node_length: 3000000
+  #   bench_programs:
+  #     # - BubbleGun_gfa
+  #     - sbSPQR_gfa
+  #     # - vg_snarls_gfa
+  #     # - clsd_sb
+  #     - sbSPQR_sb
+  #     - sbSPQR_snarls_gfa
+
+  # - name: Ultrabubble_dataset_chr22
+  #   enabled: true
+  #   builder: vg_from_vcf
+  #   urls:
+  #     fa_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz
+  #     vcf_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
+  #   vg:
+  #     region: "22"
+  #     max_node_length: 3000000
+  #   bench_programs:
+  #     # - BubbleGun_gfa
+  #     - sbSPQR_gfa
+  #     # - vg_snarls_gfa
+  #     # - clsd_sb
+  #     - sbSPQR_sb
+  #     - sbSPQR_snarls_gfa
+
+  # ---------------------------------------------------------------------------
+  # Additional datasets (commented out)
+  # ---------------------------------------------------------------------------
+  - name: coli3682
+    enabled: true
+    builder: ggcat_from_fasta
+    urls:
+      tar_gz: https://zenodo.org/records/6577997/files/coli3682_dataset.tar.gz?download=1
+    ggcat:
+      k: 27
+    bench_programs:
+      # - BubbleGun_gfa
+      # - sbSPQR_gfa
+      # - vg_snarls_gfa
+      - clsd_sb
+      # - sbSPQR_sb
+      # - sbSPQR_snarls_gfa
+
+  # - name: ecoli50
+  #   enabled: true
+  #   builder: gfa_from_url
+  #   urls:
+  #     url: https://zenodo.org/records/7937947/files/ecoli50.gfa.zst?download=1
+  #   bench_programs:
+  #     # - BubbleGun_gfa
+  #     - sbSPQR_gfa
+  #     # - vg_snarls_gfa
+  #     # - clsd_sb
+  #     - sbSPQR_sb
+  #     - sbSPQR_snarls_gfa
+
+  # - name: primates_chr6
+  #   enabled: true
+  #   builder: gfa_from_url
+  #   urls:
+  #     url: 'https://zenodo.org/records/7937947/files/primates14.chr6.fa.gz.667b9b6.c2fac19.ee137be.smooth.final.gfa.zst?download=1'
+  #   bench_programs:
+  #     # - BubbleGun_gfa
+  #     # - sbSPQR_gfa
+  #     # - vg_snarls_gfa
+  #     # - clsd_sb
+  #     # - sbSPQR_sb
+  #     - sbSPQR_snarls_gfa
+
+  # ---------------------------------------------------------------------------
+  # pggb pangenome graphs from Zenodo .fa.gz
+  # ---------------------------------------------------------------------------
+
+  # - name: mouse17_chr19
+  #   enabled: true
+  #   builder: pggb_from_fasta
+  #   urls:
+  #     fa_gz: "https://zenodo.org/records/7937947/files/mouse17.chr19.fa.gz?download=1"
+  #   # pggb:
+  #   #   extra_opts: ""
+  #   # bench_programs:
+  #   #   - sbSPQR_gfa
+  #   #   - sbSPQR_sb
+  #   #   - sbSPQR_snarls_gfa
+
+  # - name: soy37_chr18
+  #   enabled: true
+  #   builder: pggb_from_fasta
+  #   urls:
+  #     fa_gz: "https://zenodo.org/records/7937947/files/soy37.chr18.fa.gz?download=1"
+  #   # pggb:
+  #   #   extra_opts: ""
+  #   # bench_programs:
+  #   #   - sbSPQR_gfa
+  #   #   - sbSPQR_sb
+  #   #   - sbSPQR_snarls_gfa
+
+  # - name: tomato23_chr2
+  #   enabled: true
+  #   builder: pggb_from_fasta
+  #   urls:
+  #     fa_gz: "https://zenodo.org/records/7937947/files/tomato23.chr2.fa.gz?download=1"
+  #   # pggb:
+  #   #   extra_opts: ""
+  #   # bench_programs:
+  #   #   - sbSPQR_gfa
+  #   #   - sbSPQR_sb
+  #   #   - sbSPQR_snarls_gfa
+
+  # - name: primates4_chr7
+  #   enabled: true
+  #   builder: pggb_from_fasta
+  #   urls:
+  #     fa_gz: "https://zenodo.org/records/7937947/files/primates4.chr7.fa.gz?download=1"
+    # pggb:
+    #   extra_opts: ""
+    # bench_programs:
+    #   - sbSPQR_gfa
+    #   - sbSPQR_sb
+    #   - sbSPQR_snarls_gfa

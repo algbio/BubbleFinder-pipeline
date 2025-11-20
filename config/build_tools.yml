@@ -1,0 +1,27 @@
+name: build-tools
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+
+  - git
+  - cmake
+  - make
+  - ninja          
+  - pkg-config
+
+  - gcc_linux-64   
+  - gxx_linux-64  
+  
+  - zlib
+  - bzip2
+  - xz
+  - zstd
+  - libcurl
+
+  - boost-cpp
+
+  - autoconf       
+  - automake
+  - libtool

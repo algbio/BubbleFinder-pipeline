@@ -1,0 +1,12 @@
+name: vg
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - vg>=1.60  
+  - htslib>=1.17
+  - samtools>=1.17
+  - curl
+  - wget
+  - python=3.10
