@@ -127,54 +127,6 @@ defaults:
 
 datasets:
   # ---------------------------------------------------------------------------
-  # Dataset: Ultrabubble datasets via vg_from_vcf
-  # ---------------------------------------------------------------------------
-  - name: Ultrabubble_dataset_chr1
-    enabled: true
-    builder: vg_from_vcf
-    urls:
-      fa_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz
-      vcf_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
-    vg:
-      region: "1"
-      max_node_length: 3000000
-    bench_programs:
-      - BubbleGun_gfa
-      - sbSPQR_gfa
-      - vg_snarls_gfa
-      - sbSPQR_snarls_gfa
-
-  - name: Ultrabubble_dataset_chr10
-    enabled: true
-    builder: vg_from_vcf
-    urls:
-      fa_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz
-      vcf_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr10.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
-    vg:
-      region: "10"
-      max_node_length: 3000000
-    bench_programs:
-      - BubbleGun_gfa
-      - sbSPQR_gfa
-      - vg_snarls_gfa
-      - sbSPQR_snarls_gfa
-   
-  - name: Ultrabubble_dataset_chr22
-    enabled: true
-    builder: vg_from_vcf
-    urls:
-      fa_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz
-      vcf_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
-    vg:
-      region: "22"
-      max_node_length: 3000000
-    bench_programs:
-      - BubbleGun_gfa
-      - sbSPQR_gfa
-      - vg_snarls_gfa
-      - sbSPQR_snarls_gfa
-
-  # ---------------------------------------------------------------------------
   # pggb precomputed pangenome graphs from Zenodo .gfa.zst
   # ---------------------------------------------------------------------------
   - name: ecoli50
@@ -223,6 +175,87 @@ datasets:
       fa_gz: "https://zenodo.org/records/7937947/files/tomato23.chr2.fa.gz?download=1"
     pggb:
       extra_opts: ""
+    bench_programs:
+      - BubbleGun_gfa
+      - sbSPQR_gfa
+      - vg_snarls_gfa
+      - sbSPQR_snarls_gfa
+
+  # ---------------------------------------------------------------------------
+  # Ultrabubble datasets via vg_from_vcf
+  # ---------------------------------------------------------------------------
+  - name: Ultrabubble_dataset_chr1
+    enabled: true
+    builder: vg_from_vcf
+    urls:
+      fa_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz
+      vcf_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
+    vg:
+      region: "1"
+      max_node_length: 3000000
+    bench_programs:
+      - BubbleGun_gfa
+      - sbSPQR_gfa
+      - vg_snarls_gfa
+      - sbSPQR_snarls_gfa
+
+  - name: Ultrabubble_dataset_chr10
+    enabled: true
+    builder: vg_from_vcf
+    urls:
+      fa_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz
+      vcf_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr10.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
+    vg:
+      region: "10"
+      max_node_length: 3000000
+    bench_programs:
+      - BubbleGun_gfa
+      - sbSPQR_gfa
+      - vg_snarls_gfa
+      - sbSPQR_snarls_gfa
+   
+  - name: Ultrabubble_dataset_chr22
+    enabled: true
+    builder: vg_from_vcf
+    urls:
+      fa_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz
+      vcf_gz: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
+    vg:
+      region: "22"
+      max_node_length: 3000000
+    bench_programs:
+      - BubbleGun_gfa
+      - sbSPQR_gfa
+      - vg_snarls_gfa
+      - sbSPQR_snarls_gfa
+
+  # ---------------------------------------------------------------------------
+  # Manually built DBGs
+  # ---------------------------------------------------------------------------
+
+  - name: M_xanthus_DBG
+    enabled: true
+    builder: ggcat_from_fasta
+    urls:
+      listings:
+        - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/012/685/GCA_000012685.1_ASM1268v1/
+        - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/278/585/GCA_000278585.2_ASM27858v2/
+        - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/340/515/GCA_000340515.1_Myxococcus_xanthus_DZF1/
+        - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/400/955/GCA_006400955.1_ASM640095v1/
+        - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/401/215/GCA_006401215.1_ASM640121v1/
+        - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/401/635/GCA_006401635.1_ASM640163v1/
+        - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/402/015/GCA_006402015.1_ASM640201v1/
+        - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/402/735/GCA_006402735.1_ASM640273v1/
+        - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/006/402/735/GCA_006402735.1_ASM640273v1/
+        - https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/900/106/535/GCA_900106535.1_IMG-taxon_2693429903_annotated_assembly/
+      origin: https://ftp.ncbi.nlm.nih.gov
+      pattern: '.*\.fna\.gz$'
+      limit: 0
+      discovery_timeout: 20
+    ggcat:
+      k: 41
+    sb:
+      ggcat_force_f: true
     bench_programs:
       - BubbleGun_gfa
       - sbSPQR_gfa
