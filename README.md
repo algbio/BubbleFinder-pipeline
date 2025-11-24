@@ -31,8 +31,8 @@ The following tools are managed automatically by the Snakefile if no binary is s
 
 ```bash
 # 1) Clone the repository
-git clone https://github.com/algbio/BubbleFinder-pipeline.git
-cd BubbleFinder-pipeline
+git clone https://github.com/algbio/BubbleFinder-experiments.git
+cd BubbleFinder-experiments
 
 # 2) (Optional) Create a conda/mamba env with Snakemake
 mamba create -n bench snakemake -c conda-forge -c bioconda
