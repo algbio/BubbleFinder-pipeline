@@ -1050,7 +1050,8 @@ rule prechecks:
         if TIMEOUT_ENABLED and not (os.path.isabs(TIMEOUT_BIN) and is_executable(TIMEOUT_BIN)) and shutil.which(TIMEOUT_BIN) is None:
             print(f"[WARN] timeout not found ({TIMEOUT_BIN}); benchmark commands will run without timeout.", flush=True)
 
-        if not is_executable(SPQR_BIN):
+        need_sbspqr = any(is_program_sbspqr(p) for p in all_selected_programs())
+        if need_sbspqr and not is_executable(SPQR_BIN):
             raise WorkflowError(f"sbSPQR (sbfind/BubbleFinder) not found or not executable: {SPQR_BIN}")
 
         if shutil.which("conda") is None and shutil.which("mamba") is None:
