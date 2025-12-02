@@ -50,11 +50,24 @@ defaults:
       kill_after: 1
       bin: timeout
 
+  tools:
+    time_bin: /usr/bin/time
+    timeout:
+      enabled: true
+      seconds: 30000
+      kill_after: 1
+      bin: timeout
+
     # If you want to use pre-installed binaries instead, uncomment and point to them:
     # spqr_bin: /path/to/BubbleFinder
     # get_blunted: /path/to/get_blunted
     # lighter_bin: /path/to/lighter
     # clsd_bin: /path/to/clsd
+    spqr_gfa_flag: --gfa
+    spqr_sgraph_flag: --sgraph
+
+    spqr_use_dev: true      # true = dev branch
+    spqr_dev_branch: dev     # name of the dev branch in GitHub
     spqr_gfa_flag: --gfa
     spqr_sgraph_flag: --sgraph
 
@@ -78,6 +91,13 @@ defaults:
 
   sbfind:
     threads: [1,4,8,16]
+
+  stats:
+    enabled: true
+    kinds:
+      - blocks
+      - spqr
+    threads: 4
 
   # Benchmark default configuration
   bench:

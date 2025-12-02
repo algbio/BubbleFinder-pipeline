@@ -52,6 +52,10 @@ SPQR_GFA_FLAG = TOOLS.get("spqr_gfa_flag", "--gfa")
 SPQR_SGRAPH_FLAG = TOOLS.get("spqr_sgraph_flag", "")
 SPQR_THREADS_FLAG = TOOLS.get("spqr_threads_flag", "-j")
 SPQR_REPORT_FLAG = TOOLS.get("spqr_report_flag", "--report-json")
+
+SPQR_USE_DEV = bool(TOOLS.get("spqr_use_dev", False))
+SPQR_DEV_BRANCH = TOOLS.get("spqr_dev_branch", "dev")
+
 GET_BLUNTED = TOOLS.get("get_blunted", GET_BLUNTED_DEFAULT)
 CLSD_BIN    = TOOLS.get("clsd_bin",    CLSD_BIN_DEFAULT)
 LIGHTER_BIN = TOOLS.get("lighter_bin", LIGHTER_BIN_DEFAULT)
@@ -59,6 +63,9 @@ LIGHTER_BIN = TOOLS.get("lighter_bin", LIGHTER_BIN_DEFAULT)
 GGCAT_COMMON = DEFAULTS.get("ggcat", {}).get("common_opts", "-e -s 1")
 
 SB_CONF = DEFAULTS.get("sb", {}) or {}
+
+STATS_CONF = DEFAULTS.get("stats", {}) or {}
+STATS_THREADS = int(STATS_CONF.get("threads", 1))
 
 BENCH = DEFAULTS.get("bench", {}) or {}
 REPS = int(BENCH.get("reps", 2))
@@ -235,6 +242,12 @@ def clsd_edgelist_path(name):
 def sbspqr_sgraph_path(name):
     return os.path.join(DATA_DIR, name, f"{name}.sbspqr.sgraph")
 
+def stats_blocks_path(name):
+    return os.path.join(OUT_DIR, "stats", "blocks", f"{name}_block_sizes.txt")
+
+def stats_spqr_path(name):
+    return os.path.join(OUT_DIR, "stats", "spqr", f"{name}_spqr_sizes.txt")
+
 def sgraph_flags_for_dataset(name):
     local = (ds(name).get("sgraph", {}) or {})
     def flag(key, default_bool, cli):
@@ -303,6 +316,10 @@ if SPQR_BIN == SPQR_BIN_DEFAULT:
             SPQR_BIN_DEFAULT
         conda:
             BUILD_TOOLS_ENV_YML
+        params:
+            use_dev = lambda wc: int(SPQR_USE_DEV),
+            dev_branch = lambda wc: SPQR_DEV_BRANCH,
+            pinned_commit = "244f5ad1a9b258da454eeb5796c1d2e7985cb9aa"
         shell:
             r"""
             set -euo pipefail
@@ -317,8 +334,16 @@ if SPQR_BIN == SPQR_BIN_DEFAULT:
             fi
 
             cd build/BubbleFinder
- 
-            git checkout 244f5ad1a9b258da454eeb5796c1d2e7985cb9aa
+
+            git fetch --all
+
+            if [ "{params.use_dev}" -eq 1 ]; then
+              echo "[build_bubblefinder] Using dev branch: {params.dev_branch}" >&2
+              git checkout "{params.dev_branch}"
+            else
+              echo "[build_bubblefinder] Using pinned commit: {params.pinned_commit}" >&2
+              git checkout "{params.pinned_commit}"
+            fi
 
             mkdir -p build
             cd build
@@ -327,7 +352,7 @@ if SPQR_BIN == SPQR_BIN_DEFAULT:
 
             cp BubbleFinder "{output}" 
             """
-            
+
 if GET_BLUNTED == GET_BLUNTED_DEFAULT:
     rule build_get_blunted:
         message: "Download precompiled GetBlunted binary"
@@ -501,7 +526,7 @@ def time_to_tsv(cmd, bench_tsv, log_file, ensure_path=None, ensure_content=None)
         'grep -E \'Elapsed \\(wall clock\\) time|Maximum resident set size\' "$TSV_TMP" | '
         "sed 's/ (.*)//' | sed 's/^[[:space:]]*//' | tr -s ' ' '\\t' > \"$TSV_OUT\" || :",
         'printf "Timed out\\t%s\\n" "$timed_out" >> "$TSV_OUT"',
-        'printf "Exit status\\t%s\\n" "$rc" >> "$TSV_OUT"',
+        'printf "Exit status\\t%s\\n" "$rc\\n" >> "$TSV_OUT"',
         'if [ "$use_timeout" -eq 1 ]; then printf "Timeout (s)\\t%s\\n" "$TO_SECS" >> "$TSV_OUT"; fi',
         '[ -s "$TSV_OUT" ] || : > "$TSV_OUT"',
         'if [ "$rc" -ne 0 ]; then printf "[ERROR] Command exited with rc=%s (timed_out=%s).\\n" "$rc" "$timed_out" >> "$LOG_OUT"; fi',
@@ -1198,6 +1223,29 @@ rule sbspqr_prepare_sgraph:
           2> >(tee -a "{log}" >&2)
         """
 
+rule bubblefinder_stats:
+    message: "BubbleFinder stats (blocks + spqr) on {wildcards.dataset}"
+    input:
+        gfa=lambda wc: gfa_for_sb_inputs(wc.dataset),
+        pre=rules.prechecks.output
+    output:
+        blocks=os.path.join(OUT_DIR, "stats", "blocks", "{dataset}_block_sizes.txt"),
+        spqr=os.path.join(OUT_DIR, "stats", "spqr", "{dataset}_spqr_sizes.txt")
+    log:
+        os.path.join(OUT_DIR, "logs", "stats", "{dataset}.stats.log")
+    threads:
+        STATS_THREADS
+    shell:
+        r"""
+        set -euo pipefail
+        mkdir -p "$(dirname {output.blocks})" "$(dirname {output.spqr})" "$(dirname {log})"
+
+        OMP_NUM_THREADS={threads} "{SPQR_BIN}" stats \
+          -g "{input.gfa}" {SPQR_GFA_FLAG} \
+          --stats "blocks={output.blocks},spqr={output.spqr}" \
+          2> >(tee -a "{log}" >&2)
+        """
+
 # -----------------------------------------------------------------------------
 # Bench rules 
 # -----------------------------------------------------------------------------
@@ -1445,6 +1493,12 @@ rule bench_clsd_sb:
             f.write(f"Signature\t{sig}\n")
 
 
+def ALL_BLOCK_SIZE_FILES():
+    return [stats_blocks_path(dname) for dname in all_enabled_dataset_names()]
+
+def ALL_SPQR_SIZE_FILES():
+    return [stats_spqr_path(dname) for dname in all_enabled_dataset_names()]
+
 def ALL_TSVS():
     tsvs = []
     for dname in all_enabled_dataset_names():
@@ -1501,6 +1555,50 @@ rule aggregate_and_plot:
           --time-png {output.time_png} \
           --rss-png {output.rss_png} \
           --rerun-tsv {output.rerun}
+        """
+
+rule plot_block_size_hist:
+    message: "Plot histogram/boxplot of block sizes for all datasets"
+    input:
+        lambda wc: ALL_BLOCK_SIZE_FILES()
+    output:
+        os.path.join(OUT_DIR, "plots", "block_size_hist.png")
+    conda: PLOT_ENV_YML
+    params:
+        script=lambda wc: resolve_env("scripts/plot_size_hist.py"),
+        directory=lambda wc: os.path.join(OUT_DIR, "stats", "blocks"),
+        labels=lambda wc: " ".join(all_enabled_dataset_names())
+    shell:
+        r"""
+        set -euo pipefail
+        mkdir -p "$(dirname {output})"
+        python "{params.script}" "{params.directory}" \
+          --pattern "*_block_sizes.txt" \
+          --kind blocks \
+          --labels {params.labels} \
+          -o "{output}"
+        """
+
+rule plot_spqr_size_hist:
+    message: "Plot histogram/boxplot of 3-connected component sizes for all datasets"
+    input:
+        lambda wc: ALL_SPQR_SIZE_FILES()
+    output:
+        os.path.join(OUT_DIR, "plots", "spqr_size_hist.png")
+    conda: PLOT_ENV_YML
+    params:
+        script=lambda wc: resolve_env("scripts/plot_size_hist.py"),
+        directory=lambda wc: os.path.join(OUT_DIR, "stats", "spqr"),
+        labels=lambda wc: " ".join(all_enabled_dataset_names())
+    shell:
+        r"""
+        set -euo pipefail
+        mkdir -p "$(dirname {output})"
+        python "{params.script}" "{params.directory}" \
+          --pattern "*_spqr_sizes.txt" \
+          --kind spqr \
+          --labels {params.labels} \
+          -o "{output}"
         """
 
 wildcard_constraints:

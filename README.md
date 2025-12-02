@@ -7,6 +7,7 @@ This repository contains a Snakemake pipeline that:
 - Prepares unidirectional graph representations (sgraph / edgelist).
 - Runs benchmarks on several programs (BubbleGun, BubbleFinder, vg snarls, clsd).
 - Aggregates results in a single table and produces plots (time / memory).
+- Computes 2‑connected block and 3‑connected component (SPQR R‑node) size distributions and plots histograms/boxplots.
 
 ---
 
@@ -111,6 +112,35 @@ Per dataset (overrides the global value):
 
 See the comments in `datasets.yaml` for the full list of programs and options.
 
+### Stats / size‑distribution configuration
+
+Block and 3‑connected component size distributions are controlled globally under `defaults.stats`:
+
+```yaml
+defaults:
+  stats:
+    enabled: true          # enable/disable BubbleFinder stats + hist plots
+    kinds:
+      - blocks             # 2‑connected blocks
+      - spqr               # 3‑connected components (SPQR R‑node skeletons)
+    threads: 4             # threads for BubbleFinder stats runs
+```
+
+- If `enabled: true`, the pipeline will:
+  - run `BubbleFinder stats` on each enabled dataset,
+  - produce per‑dataset text files with one size per line,
+  - allow you to generate global histograms/boxplots.
+- `kinds` controls which distributions are collected and plotted:
+  - `blocks` → 2‑connected block size distributions.
+  - `spqr` → 3‑connected component size distributions.
+
+The actual plot files are:
+
+- `results/plots/block_size_hist.png`
+- `results/plots/spqr_size_hist.png`
+
+They are **not** included in the `all` rule by default; you request them explicitly as Snakemake targets (see below).
+
 ---
 
 ## 4. Running the pipeline
@@ -144,6 +174,16 @@ snakemake --use-conda -j 4 data/coli3682/coli3682.cleaned.gfa
 snakemake --use-conda -j 8 results/benchmarks.tsv
 ```
 
+- Run only the block / 3‑connected component size histogram plots (and their prerequisites):
+
+```bash
+snakemake --use-conda -j 8 \
+  results/plots/block_size_hist.png \
+  results/plots/spqr_size_hist.png
+```
+
+If the intermediate stats files already exist (`results/stats/...`), only the plotting steps will be re‑run. Otherwise, Snakemake will first build all required graphs and run `BubbleFinder stats` to populate the size files.
+
 ---
 
 ## 5. Output structure
@@ -175,11 +215,16 @@ For each dataset `<name>` (e.g. `coli3682`):
   - Raw program outputs (JSON, sgraphs, program‑specific logs).
 - `results/logs/`  
   - Detailed logs per step (ggcat, vg, sgraph, bench, etc.).
+- `results/stats/`  
+  - `blocks/<dataset>_block_sizes.txt` (one 2‑connected block size per line).  
+  - `spqr/<dataset>_spqr_sizes.txt` (one 3‑connected component size per line).
 - `results/benchmarks.tsv`  
   - Aggregated benchmark table (time, memory, signature, etc.).
 - `results/plots/`  
   - `time_by_dataset_program.png`
   - `rss_by_dataset_program.png`
+  - `block_size_hist.png` (block size histogram + boxplots across datasets)
+  - `spqr_size_hist.png` (3‑connected component size histogram + boxplots across datasets)
 - `results/summary/reruns_planned.tsv`  
   - Information used for automatic reruns (timeouts, failures).
 
